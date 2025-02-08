@@ -12,7 +12,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
 
 # Secure API keys and credentials
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+# OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 EMAIL_USER = os.environ.get("EMAIL_USER")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 
@@ -37,9 +37,12 @@ def store_jobs(jobs):
             try:
                 cursor.execute("INSERT INTO jobs (title, company, link) VALUES (?, ?, ?)",
                                (job["title"], job["company"], job["link"]))
+                print(f"Inserted into DB: {job['title']} at {job['company']}")  # 🔹 Debugging step
             except sqlite3.IntegrityError:
+                print(f"Duplicate found: {job['title']} at {job['company']}")  # 🔹 Debugging step
                 pass  # Avoid duplicate job entries
         conn.commit()
+
 
 # Fetch Pending Jobs
 def fetch_pending_jobs():
@@ -59,9 +62,12 @@ def update_job_status(job_id, status):
 def scrape_jobs():
     try:
         driver = webdriver.Chrome()
-        driver.get("https://www.indeed.com/jobs?q=software+developer&l=remote")
-        time.sleep(random.uniform(30, 60))
-        jobs = driver.find_elements(By.CLASS_NAME, "job_seen_beacon")
+        driver.get("https://in.indeed.com/jobs?q=web+developer")
+        time.sleep(random.uniform(5, 30))  # Reduced sleep time for testing
+
+        jobs = driver.find_elements(By.CSS_SELECTOR, "div.job_seen_beacon")
+        print(f"Found {len(jobs)} jobs")  # 🔹 Debugging step
+
         job_list = []
         for job in jobs:
             try:
@@ -69,6 +75,7 @@ def scrape_jobs():
                 company = job.find_element(By.CLASS_NAME, "companyName").text.strip()
                 link = job.find_element(By.TAG_NAME, "a").get_attribute("href")
                 job_list.append({"title": title, "company": company, "link": link})
+                print(f"Scraped: {title} at {company}")  # 🔹 Debugging step
             except NoSuchElementException:
                 continue
     except WebDriverException as e:
@@ -76,10 +83,12 @@ def scrape_jobs():
         job_list = []
     finally:
         driver.quit()
+
     return job_list
 
+
 # Generate Cover Letter using OpenAI API
-def generate_cover_letter(job_title, company_name, job_description):
+def generate_cover_letter(job_title, company_name, job_description, OPENAI_API_KEY=None):
     if not OPENAI_API_KEY:
         print("Missing OpenAI API key")
         return ""
