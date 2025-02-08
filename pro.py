@@ -16,6 +16,7 @@ from selenium.common.exceptions import NoSuchElementException, WebDriverExceptio
 EMAIL_USER = os.environ.get("EMAIL_USER")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 
+
 # Initialize Database
 def initialize_db():
     with sqlite3.connect("applications.db") as conn:
@@ -28,6 +29,7 @@ def initialize_db():
                             status TEXT DEFAULT 'pending'
                         )''')
         conn.commit()
+
 
 # Store Job Listings
 def store_jobs(jobs):
@@ -51,12 +53,14 @@ def fetch_pending_jobs():
         cursor.execute("SELECT id, title, company, link FROM jobs WHERE status='pending'")
         return cursor.fetchall()
 
+
 # Update Job Status
 def update_job_status(job_id, status):
     with sqlite3.connect("applications.db") as conn:
         cursor = conn.cursor()
         cursor.execute("UPDATE jobs SET status=? WHERE id=?", (status, job_id))
         conn.commit()
+
 
 # Web Scraping with Selenium
 def scrape_jobs():
@@ -104,6 +108,7 @@ def generate_cover_letter(job_title, company_name, job_description, OPENAI_API_K
         print(f"Failed to generate cover letter: {e}")
         return ""
 
+
 # Auto-Fill Job Applications with Selenium
 def apply_for_job(job_id, job_url, name, email, resume_path):
     try:
@@ -124,6 +129,7 @@ def apply_for_job(job_id, job_url, name, email, resume_path):
     finally:
         driver.quit()
 
+
 # Send Follow-Up Emails
 def send_follow_up_email(hr_email, job_title, company_name):
     if not EMAIL_USER or not EMAIL_PASSWORD:
@@ -133,7 +139,8 @@ def send_follow_up_email(hr_email, job_title, company_name):
     email["Subject"] = f"Follow-up on {job_title} Application"
     email["From"] = EMAIL_USER
     email["To"] = hr_email
-    email.set_content(f"Dear Hiring Manager,\n\nI wanted to follow up on my application for {job_title} at {company_name}. Looking forward to your response.\n\nBest regards,\nJohn Doe")
+    email.set_content(
+        f"Dear Hiring Manager,\n\nI wanted to follow up on my application for {job_title} at {company_name}. Looking forward to your response.\n\nBest regards,\nJohn Doe")
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
             smtp.starttls()
@@ -157,6 +164,7 @@ def run_bot():
             apply_for_job(job_id, link, "John Doe", "john.doe@example.com", "/path/to/resume.pdf")
             send_follow_up_email("hr@company.com", title, company)
         time.sleep(random.uniform(5, 10))
+
 
 if __name__ == "__main__":
     run_bot()
